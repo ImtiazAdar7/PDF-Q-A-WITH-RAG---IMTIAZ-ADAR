@@ -8,15 +8,24 @@ import urllib.parse
 
 load_dotenv()
 
-DB_USER = "pdf_qa_db_womu_user"
-DB_PASSWORD = "XbXVfUHUEyDiCQ7snzvwjYfQCbENWY8s"
-DB_HOST = "dpg-d8g4r1dckfvc73e3ecn0-a.oregon-postgres.render.com"
-DB_PORT = "5432"
-DB_NAME = "pdf_qa_db_womu"
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-encoded_password = urllib.parse.quote(DB_PASSWORD, safe='')
+if not DATABASE_URL:
+    # Local development fallback
+    DB_USER = "pdf_qa_db_womu_user"
+    DB_PASSWORD = "XbXVfUHUEyDiCQ7snzvwjYfQCbENWY8s"
+    DB_HOST = "dpg-d8g4r1dckfvc73e3ecn0-a.oregon-postgres.render.com"
+    DB_PORT = "5432"
+    DB_NAME = "pdf_qa_db_womu"
+    
+    encoded_password = urllib.parse.quote(DB_PASSWORD, safe='')
+    DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    print("⚠️ Using hardcoded database URL (local development)")
+else:
+    print("✅ Using DATABASE_URL from environment variable")
 
-DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable not set")
 
 engine = create_engine(
     DATABASE_URL,
@@ -56,11 +65,6 @@ def init_db():
     try:
         Base.metadata.create_all(bind=engine)
         print("✅ PostgreSQL database connected successfully!")
-        print(f"📊 Database: {DB_NAME} on Render")
     except Exception as e:
         print(f"❌ PostgreSQL connection failed: {e}")
-        print("\n📝 Troubleshooting:")
-        print("1. Check if Render PostgreSQL is active (not paused)")
-        print("2. Verify the connection string is correct")
-        print("3. Check network connectivity to Render")
         raise
