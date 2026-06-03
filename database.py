@@ -4,24 +4,27 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+import urllib.parse
 
 load_dotenv()
 
-# PostgreSQL connection - UPDATE THESE WITH YOUR CREDENTIALS
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")  # Change to your password
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_NAME = os.getenv("DB_NAME", "pdf_qa_db")
+DB_USER = "pdf_qa_db_womu_user"
+DB_PASSWORD = "XbXVfUHUEyDiCQ7snzvwjYfQCbENWY8s"
+DB_HOST = "dpg-d8g4r1dckfvc73e3ecn0-a.oregon-postgres.render.com"
+DB_PORT = "5432"
+DB_NAME = "pdf_qa_db_womu"
 
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+encoded_password = urllib.parse.quote(DB_PASSWORD, safe='')
 
-# Create engine with proper settings
+DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,  # Check connection before using
-    pool_recycle=3600,   # Recycle connections every hour
-    echo=False           # Set to True to see SQL queries
+    pool_pre_ping=True,
+    pool_recycle=3600,
+    pool_size=5,
+    max_overflow=10,
+    echo=False
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -53,10 +56,11 @@ def init_db():
     try:
         Base.metadata.create_all(bind=engine)
         print("✅ PostgreSQL database connected successfully!")
+        print(f"📊 Database: {DB_NAME} on Render")
     except Exception as e:
         print(f"❌ PostgreSQL connection failed: {e}")
-        print("\n📝 Please check:")
-        print("1. Is PostgreSQL running?")
-        print("2. Are your credentials correct in .env file?")
-        print("3. Does the database 'pdf_qa_db' exist?")
+        print("\n📝 Troubleshooting:")
+        print("1. Check if Render PostgreSQL is active (not paused)")
+        print("2. Verify the connection string is correct")
+        print("3. Check network connectivity to Render")
         raise
